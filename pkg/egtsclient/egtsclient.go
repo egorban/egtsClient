@@ -40,6 +40,7 @@ func sendData(conn net.Conn, sendPeriod int, numOIDs uint32) {
 	var err error
 	for _ = range time.Tick(time.Duration(sendPeriod * 1e9)) {
 		packNum, recNum, err = sendNewMessage(conn, numOIDs, packNum, recNum)
+		log.Printf("next packNum: %v, recNum: %v", packNum, recNum)
 		if err != nil {
 			log.Printf("got error: %v", err)
 		}
@@ -76,13 +77,12 @@ func sendNewMessage(conn net.Conn, numOIDs uint32, packNum uint16, recNum uint16
 	if err != nil {
 		return packNum, recNum, err
 	}
+	log.Printf("send packet %v with records %v; startRecNum: %v", packNum, len(records), recNum)
 	packNum++
 	recNum = num
 	err = send(conn, packetNav)
 	if err != nil {
 		log.Printf("error send packet: %v", err)
-	} else {
-		log.Printf("send packet: %v", packetData.String())
 	}
 	return packNum, recNum, err
 }
@@ -133,6 +133,7 @@ func receiveReply(conn net.Conn) {
 				break
 			}
 			if parsedPacket.Type == egts.EgtsPtResponse {
+				numSuccess := 0
 				for _, rec := range parsedPacket.Records {
 					for _, sub := range rec.Data {
 						conf, ok := sub.Data.(*egts.Confirmation)
@@ -140,12 +141,13 @@ func receiveReply(conn net.Conn) {
 							log.Printf("error expected response subrecord but got %v", sub)
 						}
 						if conf.RST != egts.Success {
-							log.Printf("reply with not ok status: %v", conf)
+							log.Printf("receive reply with not ok status: %v", conf)
 						} else {
-							log.Printf("success: %v\n", conf.CRN)
+							numSuccess++
 						}
 					}
 				}
+				log.Printf("receive success: %v\n", numSuccess)
 			}
 		}
 	}
