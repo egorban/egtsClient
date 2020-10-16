@@ -9,14 +9,6 @@ import (
 	"github.com/egorban/navprot/pkg/egts"
 )
 
-var recordNav = []byte{57, 0,
-	161, 170, // numRec
-	17,
-	118, 164, 189, 10, //oid
-	2, 2,
-	16, 24, 0, 48, 30, 29, 20, 11, 79, 182, 158, 237, 176, 180, 54, 129, 104, 129, 90, 213, 0, 0, 0, 0, 0, 0, 0,
-	18, 27, 0, 0, 0, 255, 0, 0, 0, 71, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
 const (
 	defaultBufferSize = 1024
 	writeTimeout      = 10 * time.Second
@@ -56,9 +48,11 @@ func sendData(conn net.Conn, sendPeriod int, numOIDs uint32) {
 
 func sendNewMessage(conn net.Conn, numOIDs uint32, packNum uint16, recNum uint16) (uint16, uint16, error) {
 	var recordsBin [][]byte
+	num := recNum
 	for oid := uint32(0); oid < numOIDs; oid++ {
-		recordNav = changeRec(recordNav, oid, recNum)
-		recordsBin = append(recordsBin, recordNav)
+		record := changeRec(oid, num)
+		recordsBin = append(recordsBin, record)
+		num++
 	}
 	var records []*egts.Record
 	for _, recBin := range recordsBin {
@@ -83,7 +77,7 @@ func sendNewMessage(conn net.Conn, numOIDs uint32, packNum uint16, recNum uint16
 		return packNum, recNum, err
 	}
 	packNum++
-	recNum += uint16(len(records))
+	recNum = num
 	err = send(conn, packetNav)
 	if err != nil {
 		log.Printf("error send packet: %v", err)
@@ -93,7 +87,15 @@ func sendNewMessage(conn net.Conn, numOIDs uint32, packNum uint16, recNum uint16
 	return packNum, recNum, err
 }
 
-func changeRec(recordNav []byte, oid uint32, recNum uint16) []byte {
+func changeRec(oid uint32, recNum uint16) []byte {
+	var recordNav = []byte{57, 0,
+		161, 170, // numRec
+		17,
+		118, 164, 189, 10, //oid
+		2, 2,
+		16, 24, 0, 48, 30, 29, 20, 11, 79, 182, 158, 237, 176, 180, 54, 129, 104, 129, 90, 213, 0, 0, 0, 0, 0, 0, 0,
+		18, 27, 0, 0, 0, 255, 0, 0, 0, 71, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
 	binary.LittleEndian.PutUint16(recordNav[2:4], recNum)
 	binary.LittleEndian.PutUint32(recordNav[5:9], oid)
 	return recordNav
