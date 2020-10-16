@@ -17,10 +17,6 @@ var recordNav = []byte{57, 0,
 	16, 24, 0, 48, 30, 29, 20, 11, 79, 182, 158, 237, 176, 180, 54, 129, 104, 129, 90, 213, 0, 0, 0, 0, 0, 0, 0,
 	18, 27, 0, 0, 0, 255, 0, 0, 0, 71, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-var packetAuth = []byte{126, 126, 59, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0, 1, 0, 0, 0, 0,
-	0, 6, 0, 2, 0, 2, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 51, 53, 53, 48, 57, 52, 48, 52, 51, 49, 56,
-	56, 51, 49, 49, 50, 53, 48, 48, 49, 54, 53, 48, 53, 56, 49, 53, 53, 51, 55, 0}
-
 const (
 	defaultBufferSize = 1024
 	writeTimeout      = 10 * time.Second
@@ -139,7 +135,7 @@ func receiveReply(conn net.Conn) {
 					for _, sub := range rec.Data {
 						conf, ok := sub.Data.(*egts.Confirmation)
 						if sub.Type != egts.EgtsPtResponse || !ok {
-							log.Printf("expected response subrecord but got %v", sub)
+							log.Printf("error expected response subrecord but got %v", sub)
 						}
 						if conf.RST != egts.Success {
 							log.Printf("reply with not ok status: %v", conf)
